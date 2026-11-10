@@ -13,7 +13,7 @@ import "unsafe"
 // outPreparedStmt must be destroyed with DestroyPrepare.
 func Prepare(conn Connection, query string, outPreparedStmt *PreparedStatement) State {
 	cQuery := C.CString(query)
-	defer Free(unsafe.Pointer(cQuery))
+	defer C.free(unsafe.Pointer(cQuery))
 
 	var preparedStmt C.duckdb_prepared_statement
 	state := C.duckdb_prepare(conn.data(), cQuery, &preparedStmt)
@@ -93,7 +93,7 @@ func BindValue(preparedStmt PreparedStatement, index IdxT, v Value) State {
 
 func BindParameterIndex(preparedStmt PreparedStatement, outIndex *IdxT, name string) State {
 	cName := C.CString(name)
-	defer Free(unsafe.Pointer(cName))
+	defer C.free(unsafe.Pointer(cName))
 	return C.duckdb_bind_parameter_index(preparedStmt.data(), outIndex, cName)
 }
 
@@ -218,7 +218,7 @@ func ExecutePreparedStreaming(preparedStmt PreparedStatement, outRes *Result) St
 // outExtractedStmts must be destroyed with DestroyExtracted.
 func ExtractStatements(conn Connection, query string, outExtractedStmts *ExtractedStatements) IdxT {
 	cQuery := C.CString(query)
-	defer Free(unsafe.Pointer(cQuery))
+	defer C.free(unsafe.Pointer(cQuery))
 
 	var extractedStmts C.duckdb_extracted_statements
 	count := C.duckdb_extract_statements(conn.data(), cQuery, &extractedStmts)

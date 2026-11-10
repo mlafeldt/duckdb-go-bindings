@@ -220,7 +220,7 @@ func ExecutePreparedArrow(preparedStmt PreparedStatement, outArrow *Arrow) State
 // which is fatal under GOEXPERIMENT=cgocheck2. Allocate the buffers in C to avoid that.
 func ArrowScan(conn Connection, table string, stream ArrowStream) State {
 	cTable := C.CString(table)
-	defer Free(unsafe.Pointer(cTable))
+	defer C.free(unsafe.Pointer(cTable))
 	return C.duckdb_arrow_scan(conn.data(), cTable, stream.data())
 }
 

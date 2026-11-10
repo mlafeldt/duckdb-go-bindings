@@ -20,7 +20,7 @@ func GetProfilingInfo(conn Connection) ProfilingInfo {
 // The return value must be destroyed with DestroyValue.
 func ProfilingInfoGetValue(info ProfilingInfo, key string) Value {
 	cKey := C.CString(key)
-	defer Free(unsafe.Pointer(cKey))
+	defer C.free(unsafe.Pointer(cKey))
 	v := C.duckdb_profiling_info_get_value(info.data(), cKey)
 
 	return trackedValue(v)

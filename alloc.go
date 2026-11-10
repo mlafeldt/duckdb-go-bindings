@@ -2,7 +2,25 @@ package duckdb_go_bindings
 
 /*
 #include <duckdb.h>
-#include <stdlib.h>
+#include <string.h>
+
+// Keep allocation and zeroing in one cgo call. Go must not write pointer slots
+// until stale bytes that could look like Go pointers have been cleared.
+static void *duckdb_go_calloc(size_t count, size_t size) {
+	// Some DuckDB APIs require a non-NULL array even with zero elements.
+	if (count == 0) {
+		count = 1;
+	}
+	if (size == 0 || count > SIZE_MAX / size) {
+		return NULL;
+	}
+	size_t bytes = count * size;
+	void *ptr = duckdb_malloc(bytes);
+	if (ptr) {
+		memset(ptr, 0, bytes);
+	}
+	return ptr;
+}
 */
 import "C"
 
@@ -17,6 +35,8 @@ import (
 // TODO:
 // duckdb_malloc
 
+// Free releases memory allocated by DuckDB, including duckdb_malloc.
+// Memory from C.CString, C.CBytes, or C.malloc must instead use C.free.
 func Free(ptr unsafe.Pointer) {
 	C.duckdb_free(ptr)
 }
@@ -30,9 +50,10 @@ const (
 // The return value must be freed with Free.
 func allocLogicalTypes(types []LogicalType) *C.duckdb_logical_type {
 	count := len(types)
-	// Zero pointer slots before Go writes them; the Go runtime can otherwise
-	// mistake stale bytes for Go pointers.
-	typesPtr := (*C.duckdb_logical_type)(C.calloc(C.size_t(count), logicalTypeSize))
+	typesPtr := (*C.duckdb_logical_type)(C.duckdb_go_calloc(C.size_t(count), logicalTypeSize))
+	if typesPtr == nil {
+		panic("duckdb-go-bindings: allocating logical type slots returned nil")
+	}
 
 	slots := unsafe.Slice(typesPtr, count)
 	for i, t := range types {
@@ -45,9 +66,10 @@ func allocLogicalTypes(types []LogicalType) *C.duckdb_logical_type {
 // The return value must be freed with Free.
 func allocValues(values []Value) *C.duckdb_value {
 	count := len(values)
-	// Zero pointer slots before Go writes them; the Go runtime can otherwise
-	// mistake stale bytes for Go pointers.
-	valuesPtr := (*C.duckdb_value)(C.calloc(C.size_t(count), valueSize))
+	valuesPtr := (*C.duckdb_value)(C.duckdb_go_calloc(C.size_t(count), valueSize))
+	if valuesPtr == nil {
+		panic("duckdb-go-bindings: allocating value slots returned nil")
+	}
 
 	slots := unsafe.Slice(valuesPtr, count)
 	for i, val := range values {
@@ -84,11 +106,9 @@ func allocNames(names []string) nameListAlloc {
 		blobSize += C.size_t(len(s)) + 1
 	}
 
-	// Zero pointer slots before Go writes them; the Go runtime can otherwise
-	// mistake stale bytes for Go pointers.
-	arrMem := unsafe.Pointer(C.calloc(C.size_t(n), charSize))
+	arrMem := C.duckdb_go_calloc(C.size_t(n), charSize)
 	if arrMem == nil {
-		panic("duckdb-go-bindings: calloc name array returned nil")
+		panic("duckdb-go-bindings: allocating name slots returned nil")
 	}
 	arr := (**C.char)(arrMem)
 
@@ -109,6 +129,17 @@ func allocNames(names []string) nameListAlloc {
 	}
 
 	return nameListAlloc{arr: arr, blob: (*C.char)(blobMem)}
+}
+
+// The returned copy must be freed with Free, including when data is empty.
+func allocBytes(data []byte) unsafe.Pointer {
+	size := max(len(data), 1)
+	ptr := C.duckdb_malloc(C.size_t(size))
+	if ptr == nil {
+		panic("duckdb-go-bindings: duckdb_malloc byte buffer returned nil")
+	}
+	copy(unsafe.Slice((*byte)(ptr), len(data)), data)
+	return ptr
 }
 
 var allocCounts syncMap

@@ -9,6 +9,76 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestBitOwnership(t *testing.T) {
+	defer VerifyAllocationCounters()
+	data := []byte{0, 0x6b}
+	want := append([]byte(nil), data...)
+	bit := NewBit(data)
+	defer DestroyBit(&bit)
+	clear(data)
+	require.Equal(t, want, BitMembers(&bit))
+
+	value := CreateBit(bit)
+	defer DestroyValue(&value)
+	DestroyBit(&bit)
+	DestroyBit(&bit)
+
+	// DuckDB-returned buffers share the same destructor as NewBit buffers.
+	got := GetBit(value)
+	defer DestroyBit(&got)
+	require.Equal(t, want, BitMembers(&got))
+	DestroyValue(&value)
+	require.Equal(t, want, BitMembers(&got))
+	DestroyBit(&got)
+	DestroyBit(&got)
+}
+
+func TestBigNumOwnership(t *testing.T) {
+	defer VerifyAllocationCounters()
+	for _, negative := range []bool{false, true} {
+		data := []byte{0xff, 0x10}
+		want := append([]byte(nil), data...)
+		num := NewBigNum(data, negative)
+		defer DestroyBigNum(&num)
+		clear(data)
+		got, sign := BigNumMembers(&num)
+		require.Equal(t, want, got)
+		require.Equal(t, negative, sign)
+
+		value := CreateBigNum(num)
+		defer DestroyValue(&value)
+		DestroyBigNum(&num)
+		DestroyBigNum(&num)
+
+		// Both constructor and DuckDB-returned data must use duckdb_free.
+		result := GetBigNum(value)
+		defer DestroyBigNum(&result)
+		DestroyValue(&value)
+		got, sign = BigNumMembers(&result)
+		require.Equal(t, want, got)
+		require.Equal(t, negative, sign)
+		DestroyBigNum(&result)
+		DestroyBigNum(&result)
+	}
+}
+
+func TestEmptyNativeBuffers(t *testing.T) {
+	defer VerifyAllocationCounters()
+	for _, data := range [][]byte{nil, {}} {
+		bit := NewBit(data)
+		require.Empty(t, BitMembers(&bit))
+		DestroyBit(&bit)
+		DestroyBit(&bit)
+
+		num := NewBigNum(data, false)
+		got, negative := BigNumMembers(&num)
+		require.Empty(t, got)
+		require.False(t, negative)
+		DestroyBigNum(&num)
+		DestroyBigNum(&num)
+	}
+}
+
 func TestStringTData(t *testing.T) {
 	defer VerifyAllocationCounters()
 	varcharT := CreateLogicalType(TypeVarchar)

@@ -17,7 +17,7 @@ func AddReplacementScan(db Database, callbackPtr unsafe.Pointer, extraData unsaf
 
 func ReplacementScanSetFunctionName(info ReplacementScanInfo, name string) {
 	cName := C.CString(name)
-	defer Free(unsafe.Pointer(cName))
+	defer C.free(unsafe.Pointer(cName))
 	C.duckdb_replacement_scan_set_function_name(info.data(), cName)
 }
 
@@ -27,6 +27,6 @@ func ReplacementScanAddParameter(info ReplacementScanInfo, v Value) {
 
 func ReplacementScanSetError(info ReplacementScanInfo, err string) {
 	cErr := C.CString(err)
-	defer Free(unsafe.Pointer(cErr))
+	defer C.free(unsafe.Pointer(cErr))
 	C.duckdb_replacement_scan_set_error(info.data(), cErr)
 }

@@ -113,7 +113,12 @@ func TestPackedLogicalTypes(t *testing.T) {
 	defer DestroyLogicalType(&integerT)
 	varcharT := CreateLogicalType(TypeVarchar)
 	defer DestroyLogicalType(&varcharT)
-	typ := CreateStructType([]LogicalType{integerT, varcharT}, []string{"number", "text"})
+	// The backing object deliberately contains an unrelated Go pointer.
+	backing := struct {
+		types [2]LogicalType
+		ptr   *int
+	}{types: [2]LogicalType{integerT, varcharT}, ptr: new(int)}
+	typ := CreateStructType(backing.types[:], []string{"number", "text"})
 	defer DestroyLogicalType(&typ)
 	for i, want := range []Type{TypeInteger, TypeVarchar} {
 		child := StructTypeChildType(typ, IdxT(i))
@@ -122,4 +127,57 @@ func TestPackedLogicalTypes(t *testing.T) {
 	}
 	require.Equal(t, "number", StructTypeChildName(typ, 0))
 	require.Equal(t, "text", StructTypeChildName(typ, 1))
+	require.Zero(t, *backing.ptr)
+}
+
+func TestPackedValues(t *testing.T) {
+	defer VerifyAllocationCounters()
+	typ := CreateLogicalType(TypeInteger)
+	defer DestroyLogicalType(&typ)
+	first := CreateInt32(17)
+	defer DestroyValue(&first)
+	second := CreateInt32(42)
+	defer DestroyValue(&second)
+	backing := struct {
+		values [2]Value
+		ptr    *int
+	}{values: [2]Value{first, second}, ptr: new(int)}
+	list := CreateListValue(typ, backing.values[:])
+	defer DestroyValue(&list)
+	DestroyValue(&first)
+	DestroyValue(&second)
+	require.Equal(t, IdxT(2), GetListSize(list))
+	for i, want := range []int32{17, 42} {
+		child := GetListChild(list, IdxT(i))
+		require.Equal(t, want, GetInt32(child))
+		DestroyValue(&child)
+	}
+	require.Zero(t, *backing.ptr)
+}
+
+func TestEmptyNativeArrays(t *testing.T) {
+	defer VerifyAllocationCounters()
+	for _, types := range [][]LogicalType{nil, {}} {
+		ptr := allocLogicalTypes(types)
+		require.NotNil(t, ptr)
+		Free(unsafe.Pointer(ptr))
+	}
+	for _, values := range [][]Value{nil, {}} {
+		ptr := allocValues(values)
+		require.NotNil(t, ptr)
+		Free(unsafe.Pointer(ptr))
+	}
+	for _, names := range [][]string{nil, {}} {
+		alloc := allocNames(names)
+		require.Nil(t, alloc.arr)
+		require.Nil(t, alloc.blob)
+		freeNameList(alloc)
+	}
+
+	typ := CreateLogicalType(TypeInteger)
+	defer DestroyLogicalType(&typ)
+	list := CreateListValue(typ, nil)
+	defer DestroyValue(&list)
+	require.NotNil(t, list.Ptr)
+	require.Zero(t, GetListSize(list))
 }

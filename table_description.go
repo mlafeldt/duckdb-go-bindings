@@ -13,9 +13,9 @@ import "unsafe"
 // outDesc must be destroyed with TableDescriptionDestroy.
 func TableDescriptionCreate(conn Connection, schema string, table string, outDesc *TableDescription) State {
 	cSchema := C.CString(schema)
-	defer Free(unsafe.Pointer(cSchema))
+	defer C.free(unsafe.Pointer(cSchema))
 	cTable := C.CString(table)
-	defer Free(unsafe.Pointer(cTable))
+	defer C.free(unsafe.Pointer(cTable))
 
 	var description C.duckdb_table_description
 	state := C.duckdb_table_description_create(conn.data(), cSchema, cTable, &description)
@@ -27,11 +27,11 @@ func TableDescriptionCreate(conn Connection, schema string, table string, outDes
 // outDesc must be destroyed with TableDescriptionDestroy.
 func TableDescriptionCreateExt(conn Connection, catalog string, schema string, table string, outDesc *TableDescription) State {
 	cCatalog := C.CString(catalog)
-	defer Free(unsafe.Pointer(cCatalog))
+	defer C.free(unsafe.Pointer(cCatalog))
 	cSchema := C.CString(schema)
-	defer Free(unsafe.Pointer(cSchema))
+	defer C.free(unsafe.Pointer(cSchema))
 	cTable := C.CString(table)
-	defer Free(unsafe.Pointer(cTable))
+	defer C.free(unsafe.Pointer(cTable))
 
 	var description C.duckdb_table_description
 	state := C.duckdb_table_description_create_ext(conn.data(), cCatalog, cSchema, cTable, &description)

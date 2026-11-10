@@ -39,7 +39,7 @@ func LogStorageSetExtraData(logStorage LogStorage, extraDataPtr unsafe.Pointer, 
 
 func LogStorageSetName(logStorage LogStorage, name string) {
 	cName := C.CString(name)
-	defer Free(unsafe.Pointer(cName))
+	defer C.free(unsafe.Pointer(cName))
 	C.duckdb_log_storage_set_name(logStorage.data(), cName)
 }
 

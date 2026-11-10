@@ -24,7 +24,7 @@ func LogicalTypeGetAlias(logicalType LogicalType) string {
 
 func LogicalTypeSetAlias(logicalType LogicalType, alias string) {
 	cAlias := C.CString(alias)
-	defer Free(unsafe.Pointer(cAlias))
+	defer C.free(unsafe.Pointer(cAlias))
 	C.duckdb_logical_type_set_alias(logicalType.data(), cAlias)
 }
 

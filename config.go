@@ -34,9 +34,9 @@ func GetConfigFlag(index uint64, outName *string, outDescription *string) State 
 
 func SetConfig(config Config, name string, option string) State {
 	cName := C.CString(name)
-	defer Free(unsafe.Pointer(cName))
+	defer C.free(unsafe.Pointer(cName))
 	cOption := C.CString(option)
-	defer Free(unsafe.Pointer(cOption))
+	defer C.free(unsafe.Pointer(cOption))
 	return C.duckdb_set_config(config.data(), cName, cOption)
 }
 

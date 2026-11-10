@@ -296,7 +296,7 @@ func ListEntryMembers(entry *ListEntry) (uint64, uint64) {
 // The data is stored in little endian format (absolute value).
 // The returned BigNum must be destroyed with DestroyBigNum.
 func NewBigNum(data []byte, isNegative bool) BigNum {
-	cData := (*C.uint8_t)(C.CBytes(data))
+	cData := (*C.uint8_t)(allocBytes(data))
 	return trackedBigNum(BigNum{
 		data:        cData,
 		size:        C.idx_t(len(data)),
@@ -317,7 +317,7 @@ func BigNumMembers(bn *BigNum) ([]byte, bool) {
 // The first byte contains the number of padding bits.
 // The padding bits of the second byte are set to 1, starting from the MSB.
 func NewBit(data []byte) Bit {
-	cData := (*C.uint8_t)(C.CBytes(data))
+	cData := (*C.uint8_t)(allocBytes(data))
 	return trackedBit(Bit{
 		data: cData,
 		size: C.idx_t(len(data)),

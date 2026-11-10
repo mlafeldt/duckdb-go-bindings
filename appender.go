@@ -14,9 +14,9 @@ import "unsafe"
 // Deprecated: Use AppenderCreateExt or AppenderCreateQuery.
 func AppenderCreate(conn Connection, schema string, table string, outAppender *Appender) State {
 	cSchema := C.CString(schema)
-	defer Free(unsafe.Pointer(cSchema))
+	defer C.free(unsafe.Pointer(cSchema))
 	cTable := C.CString(table)
-	defer Free(unsafe.Pointer(cTable))
+	defer C.free(unsafe.Pointer(cTable))
 
 	var appender C.duckdb_appender
 	state := C.duckdb_appender_create(conn.data(), cSchema, cTable, &appender)
@@ -28,11 +28,11 @@ func AppenderCreate(conn Connection, schema string, table string, outAppender *A
 // outAppender must be destroyed with AppenderDestroy.
 func AppenderCreateExt(conn Connection, catalog string, schema string, table string, outAppender *Appender) State {
 	cCatalog := C.CString(catalog)
-	defer Free(unsafe.Pointer(cCatalog))
+	defer C.free(unsafe.Pointer(cCatalog))
 	cSchema := C.CString(schema)
-	defer Free(unsafe.Pointer(cSchema))
+	defer C.free(unsafe.Pointer(cSchema))
 	cTable := C.CString(table)
-	defer Free(unsafe.Pointer(cTable))
+	defer C.free(unsafe.Pointer(cTable))
 
 	var appender C.duckdb_appender
 	state := C.duckdb_appender_create_ext(conn.data(), cCatalog, cSchema, cTable, &appender)
@@ -51,7 +51,7 @@ func AppenderCreateQuery(conn Connection, query string, types []LogicalType, tab
 	}
 
 	cQuery := C.CString(query)
-	defer Free(unsafe.Pointer(cQuery))
+	defer C.free(unsafe.Pointer(cQuery))
 
 	typesPtr := allocLogicalTypes(types)
 	defer Free(unsafe.Pointer(typesPtr))
@@ -61,7 +61,7 @@ func AppenderCreateQuery(conn Connection, query string, types []LogicalType, tab
 	if tableName != "" {
 		cTableName = unsafe.Pointer(C.CString(tableName))
 	}
-	defer Free(cTableName)
+	defer C.free(cTableName)
 
 	namesAlloc := allocNames(columnNames)
 	defer freeNameList(namesAlloc)
@@ -122,7 +122,7 @@ func AppenderDestroy(appender *Appender) State {
 
 func AppenderAddColumn(appender Appender, name string) State {
 	cName := C.CString(name)
-	defer Free(unsafe.Pointer(cName))
+	defer C.free(unsafe.Pointer(cName))
 	return C.duckdb_appender_add_column(appender.data(), cName)
 }
 

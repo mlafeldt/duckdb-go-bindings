@@ -18,7 +18,7 @@ import "unsafe"
 // The return value must be destroyed with DestroyErrorData.
 func CreateErrorData(t ErrorType, msg string) ErrorData {
 	cMsg := C.CString(msg)
-	defer Free(unsafe.Pointer(cMsg))
+	defer C.free(unsafe.Pointer(cMsg))
 
 	errorData := C.duckdb_create_error_data(t, cMsg)
 	return trackedErrorData(errorData)

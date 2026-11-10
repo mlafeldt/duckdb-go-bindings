@@ -29,7 +29,7 @@ func DestroyTableFunction(f *TableFunction) {
 
 func TableFunctionSetName(f TableFunction, name string) {
 	cName := C.CString(name)
-	defer Free(unsafe.Pointer(cName))
+	defer C.free(unsafe.Pointer(cName))
 	C.duckdb_table_function_set_name(f.data(), cName)
 }
 
@@ -39,7 +39,7 @@ func TableFunctionAddParameter(f TableFunction, logicalType LogicalType) {
 
 func TableFunctionAddNamedParameter(f TableFunction, name string, logicalType LogicalType) {
 	cName := C.CString(name)
-	defer Free(unsafe.Pointer(cName))
+	defer C.free(unsafe.Pointer(cName))
 	C.duckdb_table_function_add_named_parameter(f.data(), cName, logicalType.data())
 }
 
@@ -90,7 +90,7 @@ func TableFunctionGetClientContext(info BindInfo, outCtx *ClientContext) {
 
 func BindAddResultColumn(info BindInfo, name string, logicalType LogicalType) {
 	cName := C.CString(name)
-	defer Free(unsafe.Pointer(cName))
+	defer C.free(unsafe.Pointer(cName))
 	C.duckdb_bind_add_result_column(info.data(), cName, logicalType.data())
 }
 
@@ -109,7 +109,7 @@ func BindGetParameter(info BindInfo, index IdxT) Value {
 // The return value must be destroyed with DestroyValue.
 func BindGetNamedParameter(info BindInfo, name string) Value {
 	cName := C.CString(name)
-	defer Free(unsafe.Pointer(cName))
+	defer C.free(unsafe.Pointer(cName))
 	v := C.duckdb_bind_get_named_parameter(info.data(), cName)
 	return trackedValue(v)
 }
@@ -125,7 +125,7 @@ func BindSetCardinality(info BindInfo, cardinality IdxT, exact bool) {
 
 func BindSetError(info BindInfo, err string) {
 	cErr := C.CString(err)
-	defer Free(unsafe.Pointer(cErr))
+	defer C.free(unsafe.Pointer(cErr))
 	C.duckdb_bind_set_error(info.data(), cErr)
 }
 
@@ -156,7 +156,7 @@ func InitSetMaxThreads(info InitInfo, max IdxT) {
 
 func InitSetError(info InitInfo, err string) {
 	cStr := C.CString(err)
-	defer Free(unsafe.Pointer(cStr))
+	defer C.free(unsafe.Pointer(cStr))
 	C.duckdb_init_set_error(info.data(), cStr)
 }
 
@@ -178,6 +178,6 @@ func FunctionGetLocalInitData(info FunctionInfo) unsafe.Pointer {
 
 func FunctionSetError(info FunctionInfo, err string) {
 	cErr := C.CString(err)
-	defer Free(unsafe.Pointer(cErr))
+	defer C.free(unsafe.Pointer(cErr))
 	C.duckdb_function_set_error(info.data(), cErr)
 }

@@ -13,7 +13,7 @@ import "unsafe"
 // outRes must be destroyed with DestroyResult.
 func Query(conn Connection, query string, outRes *Result) State {
 	cQuery := C.CString(query)
-	defer Free(unsafe.Pointer(cQuery))
+	defer C.free(unsafe.Pointer(cQuery))
 
 	state := C.duckdb_query(conn.data(), cQuery, &outRes.data)
 	trackedResult(outRes)

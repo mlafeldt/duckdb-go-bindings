@@ -29,7 +29,7 @@ func DestroyScalarFunction(f *ScalarFunction) {
 
 func ScalarFunctionSetName(f ScalarFunction, name string) {
 	cName := C.CString(name)
-	defer Free(unsafe.Pointer(cName))
+	defer C.free(unsafe.Pointer(cName))
 	C.duckdb_scalar_function_set_name(f.data(), cName)
 }
 
@@ -75,7 +75,7 @@ func ScalarFunctionSetBindDataCopy(info BindInfo, callbackPtr unsafe.Pointer) {
 
 func ScalarFunctionBindSetError(info BindInfo, err string) {
 	cErr := C.CString(err)
-	defer Free(unsafe.Pointer(cErr))
+	defer C.free(unsafe.Pointer(cErr))
 	C.duckdb_scalar_function_bind_set_error(info.data(), cErr)
 }
 
@@ -110,7 +110,7 @@ func ScalarFunctionGetClientContext(info BindInfo, outCtx *ClientContext) {
 
 func ScalarFunctionSetError(info FunctionInfo, err string) {
 	cErr := C.CString(err)
-	defer Free(unsafe.Pointer(cErr))
+	defer C.free(unsafe.Pointer(cErr))
 	C.duckdb_scalar_function_set_error(info.data(), cErr)
 }
 
@@ -118,7 +118,7 @@ func ScalarFunctionSetError(info FunctionInfo, err string) {
 // The return value must be destroyed with DestroyScalarFunctionSet.
 func CreateScalarFunctionSet(name string) ScalarFunctionSet {
 	cName := C.CString(name)
-	defer Free(unsafe.Pointer(cName))
+	defer C.free(unsafe.Pointer(cName))
 
 	set := C.duckdb_create_scalar_function_set(cName)
 	return trackedScalarFunctionSet(set)

@@ -20,7 +20,7 @@ func CreateInstanceCache() InstanceCache {
 // outDb must be closed with Close.
 func GetOrCreateFromCache(cache InstanceCache, path string, outDb *Database, config Config, errMsg *string) State {
 	cPath := C.CString(path)
-	defer Free(unsafe.Pointer(cPath))
+	defer C.free(unsafe.Pointer(cPath))
 	var err *C.char
 	defer func() { Free(unsafe.Pointer(err)) }()
 
@@ -47,7 +47,7 @@ func DestroyInstanceCache(cache *InstanceCache) {
 // Deprecated: Use OpenExt.
 func Open(path string, outDb *Database) State {
 	cPath := C.CString(path)
-	defer Free(unsafe.Pointer(cPath))
+	defer C.free(unsafe.Pointer(cPath))
 
 	var db C.duckdb_database
 	state := C.duckdb_open(cPath, &db)
@@ -59,7 +59,7 @@ func Open(path string, outDb *Database) State {
 // outDb must be closed with Close.
 func OpenExt(path string, outDb *Database, config Config, errMsg *string) State {
 	cPath := C.CString(path)
-	defer Free(unsafe.Pointer(cPath))
+	defer C.free(unsafe.Pointer(cPath))
 	var err *C.char
 	defer func() { Free(unsafe.Pointer(err)) }()
 
@@ -160,7 +160,7 @@ func LibraryVersion() string {
 // The return value must be destroyed with DestroyValue.
 func GetTableNames(conn Connection, query string, qualified bool) Value {
 	cQuery := C.CString(query)
-	defer Free(unsafe.Pointer(cQuery))
+	defer C.free(unsafe.Pointer(cQuery))
 	v := C.duckdb_get_table_names(conn.data(), cQuery, C.bool(qualified))
 	return trackedValue(v)
 }
