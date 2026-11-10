@@ -107,6 +107,29 @@ func TestPackedNames(t *testing.T) {
 	}
 }
 
+func TestAllocSlotsZeroed(t *testing.T) {
+	for range 16 {
+		for _, n := range []int{0, 1, 8, 64} {
+			ptr := allocSlots[unsafe.Pointer](n)
+			require.NotNil(t, ptr)
+			bytes := unsafe.Slice((*byte)(unsafe.Pointer(ptr)), max(n, 1)*int(unsafe.Sizeof(*ptr)))
+			require.Equal(t, make([]byte, len(bytes)), bytes)
+			// Leave dirty slots for the allocator to reuse on the next pass.
+			for i := range bytes {
+				bytes[i] = 0xff
+			}
+			Free(unsafe.Pointer(ptr))
+		}
+	}
+}
+
+func TestAllocSlotsOverflow(t *testing.T) {
+	maxInt := int(^uint(0) >> 1)
+	require.PanicsWithValue(t, "duckdb-go-bindings: allocating native slots returned nil", func() {
+		allocSlots[unsafe.Pointer](maxInt)
+	})
+}
+
 func TestPackedLogicalTypes(t *testing.T) {
 	defer VerifyAllocationCounters()
 	integerT := CreateLogicalType(TypeInteger)

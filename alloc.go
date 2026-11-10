@@ -41,21 +41,21 @@ func Free(ptr unsafe.Pointer) {
 	C.duckdb_free(ptr)
 }
 
-const (
-	logicalTypeSize = C.size_t(unsafe.Sizeof((C.duckdb_logical_type)(nil)))
-	valueSize       = C.size_t(unsafe.Sizeof((C.duckdb_value)(nil)))
-	charSize        = C.size_t(unsafe.Sizeof((*C.char)(nil)))
-)
+// allocSlots allocates zeroed native slots that must be freed with Free.
+// Even an empty array has a non-nil address for DuckDB APIs that require one.
+func allocSlots[T any](count int) *T {
+	var slot T
+	ptr := C.duckdb_go_calloc(C.size_t(count), C.size_t(unsafe.Sizeof(slot)))
+	if ptr == nil {
+		panic("duckdb-go-bindings: allocating native slots returned nil")
+	}
+	return (*T)(ptr)
+}
 
 // The return value must be freed with Free.
 func allocLogicalTypes(types []LogicalType) *C.duckdb_logical_type {
-	count := len(types)
-	typesPtr := (*C.duckdb_logical_type)(C.duckdb_go_calloc(C.size_t(count), logicalTypeSize))
-	if typesPtr == nil {
-		panic("duckdb-go-bindings: allocating logical type slots returned nil")
-	}
-
-	slots := unsafe.Slice(typesPtr, count)
+	typesPtr := allocSlots[C.duckdb_logical_type](len(types))
+	slots := unsafe.Slice(typesPtr, len(types))
 	for i, t := range types {
 		slots[i] = t.data()
 	}
@@ -65,13 +65,8 @@ func allocLogicalTypes(types []LogicalType) *C.duckdb_logical_type {
 
 // The return value must be freed with Free.
 func allocValues(values []Value) *C.duckdb_value {
-	count := len(values)
-	valuesPtr := (*C.duckdb_value)(C.duckdb_go_calloc(C.size_t(count), valueSize))
-	if valuesPtr == nil {
-		panic("duckdb-go-bindings: allocating value slots returned nil")
-	}
-
-	slots := unsafe.Slice(valuesPtr, count)
+	valuesPtr := allocSlots[C.duckdb_value](len(values))
+	slots := unsafe.Slice(valuesPtr, len(values))
 	for i, val := range values {
 		slots[i] = val.data()
 	}
@@ -106,15 +101,11 @@ func allocNames(names []string) nameListAlloc {
 		blobSize += C.size_t(len(s)) + 1
 	}
 
-	arrMem := C.duckdb_go_calloc(C.size_t(n), charSize)
-	if arrMem == nil {
-		panic("duckdb-go-bindings: allocating name slots returned nil")
-	}
-	arr := (**C.char)(arrMem)
+	arr := allocSlots[*C.char](n)
 
 	blobMem := unsafe.Pointer(C.duckdb_malloc(blobSize))
 	if blobMem == nil {
-		Free(arrMem)
+		Free(unsafe.Pointer(arr))
 		panic("duckdb-go-bindings: duckdb_malloc name blob returned nil")
 	}
 
